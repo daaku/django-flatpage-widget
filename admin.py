@@ -1,18 +1,17 @@
+from django.conf import settings
 from django.contrib import admin
+from django.contrib.flatpages.admin import FlatPageAdmin
 from django.contrib.flatpages.models import FlatPage
-from django.contrib.flatpages.admin import FlatPageAdmin as FlatPageAdminOrig
+from django.core.urlresolvers import get_callable
 
-class FlatPageAdmin(FlatPageAdminOrig):
-    change_form_template = 'flatpages_yui_rte/change_form.html'
 
-    class Media:
-        js = (
-                'http://yui.yahooapis.com/combo?2.5.2/build/yahoo-dom-event/yahoo-dom-event.js&2.5.2/build/container/container_core-min.js&2.5.2/build/menu/menu-min.js&2.5.2/build/element/element-beta-min.js&2.5.2/build/button/button-min.js&2.5.2/build/editor/editor-beta-min.js',
-        )
-        css = {
-            'all': ('http://yui.yahooapis.com/2.5.2/build/assets/skins/sam/skin.css',)
-        }
+class FlatPageAdminWidget(FlatPageAdmin):
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        if db_field.name == 'content':
+            c, k = getattr(settings, 'FLATPAGE_WIDGET')
+            kwargs['widget'] = get_callable(c)(**k)
+        return super(FlatPageAdmin, self).formfield_for_dbfield(db_field, **kwargs)
 
 # We have to unregister it, and then reregister
 admin.site.unregister(FlatPage)
-admin.site.register(FlatPage, FlatPageAdmin)
+admin.site.register(FlatPage, FlatPageAdminWidget)
